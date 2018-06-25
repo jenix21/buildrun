@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::process;
 
 struct BuildCommand {
-  cmd_map: HashMap<String, &'static str>,
+  cmd_map: HashMap<&'static str, &'static str>,
 }
 
 impl BuildCommand {
@@ -12,11 +12,11 @@ impl BuildCommand {
     }
   }
   fn init(&mut self) {
-    self.cmd_map.insert(String::from("gclient"), "sync --verbose --reset --force --with_branch_heads --ignore_locks --delete_unversioned_trees --disable-syntax-validation");
-    self.cmd_map.insert(String::from("gn"), "gen {}");
+    self.cmd_map.insert("gclient", "sync --verbose --reset --force --with_branch_heads --ignore_locks --delete_unversioned_trees --disable-syntax-validation");
+    self.cmd_map.insert("gn", "gen {}");
     self
       .cmd_map
-      .insert(String::from("incredibuild.cmd"), "{} {}");
+      .insert("incredibuild.cmd", "{} {}");
   }
   fn args_of(&self, cmd: &str, args: &[&str]) -> Option<String> {
     match self.cmd_map.get(cmd) {
