@@ -1,5 +1,26 @@
+extern crate regex;
 use std::collections::HashMap;
 use std::process;
+
+trait Formattable {
+  fn format(&self, args: &[&str]) -> Self;
+}
+
+impl Formattable for String {
+  fn format(&self, args: &[&str]) -> String {
+    let place_holder = "{}";
+    if !self.contains(&place_holder) {
+      return self.clone();
+    }
+    let mut formatted = String::new();
+    let slices: Vec<&str> = self.split("{}").collect();
+    for zipped in slices.iter().zip(args.iter()) {
+      formatted.push_str(zipped.0);
+      formatted.push_str(zipped.1);
+    }
+    return formatted;
+  }
+}
 
 struct BuildCommand {
   cmd_map: HashMap<&'static str, &'static str>,
@@ -20,24 +41,26 @@ impl BuildCommand {
   }
   fn args_of(&self, cmd: &str, args: &[&str]) -> Option<String> {
     match self.cmd_map.get(cmd) {
-      // FIXME: format! only supports string literal.
-      Some(&arg_str) => format!(String::from(arg_str), args),
+      Some(ref arg_str) => Some(arg_str.to_string().format(args)),
       _ => None,
     }
   }
 }
 
 fn run() {
-  for cmd in build_cmd {
-    let output = process::Command::new(cmd.name)
-      .args(cmd.args)
+  let mut build_cmd = BuildCommand::new();
+  build_cmd.init();
+
+  let cmd_to_run = vec![("gn", "out/release"), ("incredibuild.com", "release,whale")];
+
+  for cmd_arg in &cmd_to_run {
+    let args: Vec<&str> = cmd_arg.1.split(',').collect();
+    let output = process::Command::new(cmd_arg.0)
+      .args(build_cmd.args_of(cmd_arg.0, &args))
       .output()
-      .expect(&format!("{} failed", &cmd.name));
+      .expect(&format!("{} failed", &cmd_arg.0));
     if !output.status.success() {
       println!("{}", String::from_utf8_lossy(&output.stderr));
-      if !cmd.ignore {
-        break;
-      }
     }
   }
 }
